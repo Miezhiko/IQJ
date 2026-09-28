@@ -1,173 +1,23 @@
 #!/usr/bin/env python3
 """
-Builds index.html from ../README.md.
+Builds index.html from ../README.md via the shared parser in ../tools/manifesto.py.
 
-The manifesto's markdown is hand-authored in a very regular shape, so this
-parses it directly (no generic markdown engine) to get full control over the
-HTML structure the scroll animations hook into. Re-run after any edit to
-README.md:
+Re-run after any edit to README.md:
 
     python3 build.py
+
+(or just run ../rebuild.sh, which rebuilds the site and the PDF together)
 """
 import html
-import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-SRC = ROOT.parent / "README.md"
+sys.path.insert(0, str(ROOT.parent / "tools"))
+import manifesto  # noqa: E402
+
 TEMPLATE = ROOT / "template.html"
 OUT = ROOT / "index.html"
-
-
-def inline(text: str) -> str:
-    """Convert the small inline markdown vocabulary used in the manifesto."""
-    text = html.escape(text, quote=False)
-    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-    text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    text = re.sub(r"§(\d+)", r'<span class="ref">§\1</span>', text)
-    return text
-
-
-def parse(md: str):
-    lines = md.split("\n")
-    doc = {"title": "", "preamble": [], "books": []}
-    i = 0
-    n = len(lines)
-
-    # Title
-    while i < n and not lines[i].startswith("# "):
-        i += 1
-    doc["title"] = lines[i][2:].strip()
-    i += 1
-
-    # Preamble paragraphs until first "## "
-    buf = []
-    while i < n and not lines[i].startswith("## "):
-        line = lines[i]
-        if line.strip() == "" or line.strip() == "---":
-            if buf:
-                doc["preamble"].append(inline(" ".join(buf)))
-                buf = []
-        else:
-            buf.append(line.strip())
-        i += 1
-    if buf:
-        doc["preamble"].append(inline(" ".join(buf)))
-
-    # Books / Заключение / Словарь
-    current_book = None
-    current_section = None
-    para_buf = []
-    list_buf = []
-
-    def flush_para():
-        nonlocal para_buf
-        if para_buf and current_section is not None:
-            current_section["blocks"].append(("p", inline(" ".join(para_buf))))
-        para_buf = []
-
-    def flush_list():
-        nonlocal list_buf
-        if list_buf and current_section is not None:
-            current_section["blocks"].append(("ol", [inline(t) for t in list_buf]))
-        list_buf = []
-
-    while i < n:
-        line = lines[i]
-        stripped = line.strip()
-
-        if stripped.startswith("## "):
-            flush_para()
-            flush_list()
-            title = stripped[3:].strip()
-            # title looks like "🜁 Книга Первая. Исток и Русло" or "🜁 Заключение"
-            glyph, _, rest = title.partition(" ")
-            current_book = {"glyph": glyph, "title": rest, "sections": [], "kind": "book"}
-            if rest.startswith("Заключение"):
-                current_book["kind"] = "conclusion"
-            elif rest.startswith("Словарь"):
-                current_book["kind"] = "glossary"
-            elif "Аксиоматика" in rest:
-                current_book["kind"] = "axioms"
-            doc["books"].append(current_book)
-            current_section = {"num": None, "title": None, "blocks": []}
-            current_book["sections"].append(current_section)
-            i += 1
-            continue
-
-        if stripped.startswith("### "):
-            flush_para()
-            flush_list()
-            heading = stripped[4:].strip()
-            m = re.match(r"§(\d+)\.\s*(.+)", heading)
-            current_section = {
-                "num": m.group(1) if m else None,
-                "title": m.group(2) if m else heading,
-                "blocks": [],
-            }
-            current_book["sections"].append(current_section)
-            i += 1
-            continue
-
-        if stripped == "" :
-            flush_para()
-            flush_list()
-            i += 1
-            continue
-
-        if stripped == "---":
-            i += 1
-            continue
-
-        if re.match(r"^\d+\.\s", stripped):
-            flush_para()
-            item = re.sub(r"^\d+\.\s", "", stripped)
-            list_buf.append(item)
-            i += 1
-            continue
-
-        if stripped.startswith("- "):
-            # glossary bullet: "- **Term** — definition"
-            flush_para()
-            flush_list()
-            item = stripped[2:]
-            m = re.match(r"\*\*(.+?)\*\*\s*—\s*(.+)", item)
-            if m:
-                current_section["blocks"].append(("dt", (inline(m.group(1)), inline(m.group(2)))))
-            else:
-                current_section["blocks"].append(("dt", (inline(item), "")))
-            i += 1
-            continue
-
-        if stripped.startswith("△"):
-            flush_para()
-            flush_list()
-            current_section["blocks"].append(("axiom", inline(stripped[1:].strip())))
-            i += 1
-            continue
-
-        if stripped.startswith("🜁 *") :
-            # closing invocation line in conclusion
-            flush_para()
-            flush_list()
-            txt = stripped[2:].strip()
-            txt = txt.strip("*")
-            current_section["blocks"].append(("invocation", inline(txt)))
-            i += 1
-            continue
-
-        para_buf.append(stripped)
-        i += 1
-
-    flush_para()
-    flush_list()
-    return doc
-
-
-BOOK_NUM_WORDS = {
-    "Первая": "I", "Вторая": "II", "Третья": "III", "Четвёртая": "IV",
-    "Пятая": "V", "Шестая": "VI", "Седьмая": "VII", "Восьмая": "VIII",
-}
 
 
 def render_blocks(blocks):
@@ -203,9 +53,8 @@ BOOK_MOODS = {
 
 def render_book(book, book_index):
     if book["kind"] == "book":
-        m = re.match(r"Книга (\S+)\.\s*(.+)", book["title"])
-        roman = BOOK_NUM_WORDS.get(m.group(1), str(book_index))
-        book_title = m.group(2)
+        roman = manifesto.book_roman(book, book_index)
+        book_title = manifesto.book_name(book)
         mood = BOOK_MOODS.get(book_index, "flow")
         sections_html = []
         for sec in book["sections"]:
@@ -286,18 +135,17 @@ def render_nav(doc):
         if book["kind"] != "book":
             continue
         bi += 1
-        m = re.match(r"Книга (\S+)\.\s*(.+)", book["title"])
-        roman = BOOK_NUM_WORDS.get(m.group(1), str(bi))
+        roman = manifesto.book_roman(book, bi)
+        name = manifesto.book_name(book)
         items.append(
-            f'<a href="#book-{bi}" class="nav-dot" data-target="book-{bi}" title="{html.escape(m.group(2))}"><span>{roman}</span></a>'
+            f'<a href="#book-{bi}" class="nav-dot" data-target="book-{bi}" title="{html.escape(name)}"><span>{roman}</span></a>'
         )
     items.append('<a href="#conclusion" class="nav-dot" data-target="conclusion" title="Заключение"><span>◆</span></a>')
     return "\n".join(items)
 
 
 def main():
-    md = SRC.read_text(encoding="utf-8")
-    doc = parse(md)
+    doc = manifesto.load()
 
     preamble_html = "\n".join(f'<p class="reveal">{p}</p>' for p in doc["preamble"])
 
@@ -306,9 +154,7 @@ def main():
     for book in doc["books"]:
         if book["kind"] == "book":
             bi += 1
-            books_html.append(render_book(book, bi))
-        else:
-            books_html.append(render_book(book, bi))
+        books_html.append(render_book(book, bi))
 
     nav_html = render_nav(doc)
 

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title><!--TITLE--></title>
+<style>
+  @page { size: A4; margin: 22mm 20mm 22mm 20mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Liberation Serif", "DejaVu Serif", "Noto Serif", serif;
+    font-size: 11.5pt; line-height: 1.55; color: #241a12; background: #fdfaf3;
+  }
+  h1 {
+    font-family: "Liberation Serif", serif; font-size: 20pt; text-align: center;
+    letter-spacing: 0.02em; margin: 0 0 6mm 0; padding-bottom: 6mm;
+    border-bottom: 2px solid #7a4a1e; color: #4a2e0e; page-break-after: avoid;
+  }
+  body > p:nth-of-type(1),
+  body > p:nth-of-type(2) {
+    font-style: italic; text-align: center; color: #5a3a1a;
+    margin: 0 8mm 5mm 8mm; font-size: 10.8pt; line-height: 1.6;
+  }
+  body > p:nth-of-type(2) { margin-bottom: 10mm; }
+  h2 {
+    font-size: 15pt; color: #7a3b12; margin-top: 14mm; margin-bottom: 4mm;
+    padding-bottom: 2mm; border-bottom: 1px solid #c9a86a;
+    page-break-after: avoid; page-break-before: auto;
+  }
+  h2:first-of-type { margin-top: 0; }
+  h3 { font-size: 12.5pt; color: #5a3a1a; margin-top: 7mm; margin-bottom: 2.5mm; page-break-after: avoid; }
+  p { margin: 0 0 3.5mm 0; text-align: justify; orphans: 3; widows: 3; }
+  em { color: #6b4423; font-style: italic; }
+  strong { color: #3a2410; }
+  ol { margin: 0 0 3.5mm 0; padding-left: 6mm; }
+  ul { margin: 0 0 3.5mm 0; padding-left: 6mm; }
+  li { margin-bottom: 2mm; text-align: justify; }
+  hr { border: none; border-top: 1px solid #c9a86a; margin: 8mm 0; }
+  /* Axioms block (Book Eight): the <p> right after its <h2> */
+  h2:nth-of-type(8) + p {
+    background: #f4ead4; border-left: 3px solid #7a4a1e; padding: 5mm 6mm;
+    font-size: 11pt; line-height: 2; font-weight: 500;
+  }
+  /* Closing invocation (Заключение): the very last <p> in the document */
+  body > p:last-of-type { text-align: center; line-height: 2.3; margin-top: 6mm; }
+  body > p:last-of-type em { color: #7a3b12; }
+  /* Glossary: the <ul> right after the last <h2> */
+  h2:last-of-type + ul { columns: 1; font-size: 10.8pt; line-height: 1.6; }
+  h2:last-of-type + ul li { margin-bottom: 2.2mm; }
+</style>
+</head>
+<body>
+<!--BODY-->
+</body>
+</html>
