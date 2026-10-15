@@ -5,8 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-echo "→ site/index.html"
-python3 site/build.py
+echo "→ index.html"
+python3 build.py
 
 echo "→ IQJ-manifest.pdf"
 python3 pdf/build.py

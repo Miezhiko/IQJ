@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Builds index.html from ../README.md via the shared parser in ../tools/manifesto.py.
+Builds index.html from README.md via the shared parser in tools/manifesto.py.
 
 Re-run after any edit to README.md:
 
     python3 build.py
 
-(or just run ../rebuild.sh, which rebuilds the site and the PDF together)
+(or just run ./rebuild.sh, which rebuilds the site and the PDF together)
 """
 import html
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-sys.path.insert(0, str(ROOT.parent / "tools"))
+sys.path.insert(0, str(ROOT / "tools"))
 import manifesto  # noqa: E402
 
 TEMPLATE = ROOT / "template.html"
@@ -83,6 +83,8 @@ def render_book(book, book_index):
 </section>
 """
     elif book["kind"] == "axioms":
+        roman = manifesto.book_roman(book, book_index)
+        book_title = manifesto.book_name(book)
         axioms = []
         for sec in book["sections"]:
             for kind, payload in sec["blocks"]:
@@ -94,8 +96,8 @@ def render_book(book, book_index):
         return f"""
 <section class="book axioms-book" id="axioms" data-book="{book_index}" data-mood="crystal">
   <div class="book-divider">
-    <span class="book-roman">VIII</span>
-    <h2 class="book-title reveal-title">Аксиоматика</h2>
+    <span class="book-roman">{roman}</span>
+    <h2 class="book-title reveal-title">{book_title}</h2>
     <span class="glyph-line" aria-hidden="true">△</span>
   </div>
   <ul class="axioms-list">{items}</ul>
