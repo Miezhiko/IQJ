@@ -373,19 +373,24 @@
     }
 
     function pause() {
+      // The native speechSynthesis.pause()/resume() pair is unreliable
+      // across browsers (resume() silently doing nothing is a long-known
+      // issue). Pausing is done ourselves instead: cancel the current
+      // utterance outright and simply remember which block we were on;
+      // resume() just re-speaks that same block. Block-level granularity
+      // (not mid-sentence) is the trade-off, in exchange for it actually
+      // working reliably every time.
       state = "paused";
       setBtnState(false);
-      speechSynthesis.pause();
+      clearTimeout(watchdog);
+      speechSynthesis.cancel();
     }
 
     function resume() {
+      if (!items) return;
       state = "reading";
       setBtnState(true);
-      // Chrome occasionally leaves resume() silent after a long pause or a
-      // backgrounded tab; re-speaking the current item is the simple,
-      // reliable fallback rather than chasing that platform bug.
-      if (speechSynthesis.paused) speechSynthesis.resume();
-      else speakFrom(idx);
+      speakFrom(idx);
     }
 
     function stop() {
@@ -404,10 +409,9 @@
       else resume();
     });
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden && state === "reading") pause();
-    });
-
+    // Deliberately no visibilitychange handler: switching tabs should not
+    // stop the reading, and modern browsers keep speechSynthesis running
+    // in a backgrounded tab just fine.
     window.addEventListener("beforeunload", () => speechSynthesis.cancel());
   })();
 
