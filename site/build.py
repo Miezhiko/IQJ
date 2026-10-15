@@ -46,9 +46,10 @@ BOOK_MOODS = {
     3: "flow",
     4: "murk",
     5: "flow",
-    6: "network",
-    7: "flow",
-    8: "murk",
+    6: "murk",
+    7: "network",
+    8: "flow",
+    9: "murk",
 }
 
 
