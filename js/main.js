@@ -229,6 +229,155 @@
     });
   })();
 
+  /* ---------------- text-to-speech: "listen to the treatise" ---------------- */
+  /* Walks the content in document order, queues one SpeechSynthesisUtterance
+     per block (paragraph, axiom, glossary entry...), highlights whichever
+     one is currently being read, and gently scrolls it into view if it has
+     drifted off-screen. No audio files, no server: the browser's own
+     speechSynthesis API, chunked per-block so long sections don't hit the
+     well-known "utterances over ~15s silently stop" bug in Chrome. */
+
+  (function setupTTS() {
+    const btn = document.getElementById("tts-toggle");
+    if (!btn || !("speechSynthesis" in window)) {
+      if (btn) btn.style.display = "none";
+      return;
+    }
+
+    const SELECTOR = [
+      ".hero-title",
+      ".hero-subtitle",
+      ".preamble p",
+      ".book-divider .book-title",
+      "h3",
+      ".passage p",
+      ".passage-list li",
+      "li.axiom",
+      "p.invocation",
+      ".gloss-entry",
+    ].join(", ");
+
+    let items = null; // [{el, text}], built lazily on first play
+    let voice = null;
+    let idx = 0;
+    let state = "idle"; // idle | reading | paused
+
+    function pickVoice() {
+      const voices = speechSynthesis.getVoices();
+      voice = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("ru")) || null;
+    }
+    pickVoice();
+    if ("onvoiceschanged" in speechSynthesis) {
+      speechSynthesis.onvoiceschanged = pickVoice;
+    }
+
+    function extractText(el) {
+      const clone = el.cloneNode(true);
+      clone.querySelectorAll("br").forEach((br) => br.replaceWith(" "));
+      let text = clone.textContent.replace(/\s+/g, " ").trim();
+      if (el.classList.contains("axiom")) text = text.replace(/^△\s*/, "");
+      if (el.classList.contains("gloss-entry")) {
+        const dt = el.querySelector("dt");
+        const dd = el.querySelector("dd");
+        const term = dt ? dt.textContent.trim() : "";
+        const def = dd ? dd.textContent.trim() : "";
+        text = def ? `${term}. ${def}` : term;
+      }
+      return text;
+    }
+
+    function buildItems() {
+      items = Array.from(document.querySelectorAll(SELECTOR))
+        .map((el) => ({ el, text: extractText(el) }))
+        .filter((it) => it.text.length > 0);
+    }
+
+    function clearHighlight() {
+      document.querySelectorAll(".tts-active").forEach((el) => el.classList.remove("tts-active"));
+    }
+
+    function revealCurrent(el) {
+      if (reduceMotion) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top > 80 && rect.bottom < window.innerHeight - 80) return;
+      if (lenis) lenis.scrollTo(el, { offset: -window.innerHeight * 0.35, duration: 1.0 });
+      else el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function setBtnState(reading) {
+      btn.classList.toggle("on", reading);
+      btn.setAttribute("aria-pressed", reading ? "true" : "false");
+    }
+
+    function speakFrom(i) {
+      if (!items || i >= items.length) {
+        stop();
+        return;
+      }
+      idx = i;
+      const item = items[idx];
+      clearHighlight();
+      item.el.classList.add("tts-active");
+      revealCurrent(item.el);
+
+      const utter = new SpeechSynthesisUtterance(item.text);
+      utter.lang = "ru-RU";
+      if (voice) utter.voice = voice;
+      utter.rate = 0.98;
+      utter.onend = () => {
+        if (state === "reading") speakFrom(idx + 1);
+      };
+      utter.onerror = () => {
+        if (state === "reading") speakFrom(idx + 1);
+      };
+      speechSynthesis.speak(utter);
+    }
+
+    function start() {
+      if (!items) buildItems();
+      if (!items.length) return;
+      state = "reading";
+      setBtnState(true);
+      speakFrom(0);
+    }
+
+    function pause() {
+      state = "paused";
+      setBtnState(false);
+      speechSynthesis.pause();
+    }
+
+    function resume() {
+      state = "reading";
+      setBtnState(true);
+      // Chrome occasionally leaves resume() silent after a long pause or a
+      // backgrounded tab; re-speaking the current item is the simple,
+      // reliable fallback rather than chasing that platform bug.
+      if (speechSynthesis.paused) speechSynthesis.resume();
+      else speakFrom(idx);
+    }
+
+    function stop() {
+      state = "idle";
+      setBtnState(false);
+      speechSynthesis.cancel();
+      clearHighlight();
+      idx = 0;
+    }
+
+    btn.addEventListener("click", () => {
+      if (state === "idle") start();
+      else if (state === "reading") pause();
+      else resume();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && state === "reading") pause();
+    });
+
+    window.addEventListener("beforeunload", () => speechSynthesis.cancel());
+  })();
+
   /* ---------------- refresh on load & resize ---------------- */
 
   window.addEventListener("load", () => {
