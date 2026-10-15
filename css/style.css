@@ -184,6 +184,28 @@ body {
   transition: background 0.4s ease, box-shadow 0.4s ease;
 }
 
+#pdf-download {
+  position: fixed;
+  left: 18px;
+  bottom: 114px;
+  z-index: 40;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 168, 106, 0.55);
+  background: rgba(14, 9, 6, 0.35);
+  color: rgba(232, 200, 138, 0.8);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+#pdf-download:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+#pdf-download svg { pointer-events: none; }
+
 /* ---------- layout scaffolding ---------- */
 
 #scroll-container {
