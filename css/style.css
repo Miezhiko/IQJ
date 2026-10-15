@@ -327,7 +327,7 @@ body {
   line-height: 1.8;
   margin: 0 0 1.15rem;
   text-align: justify;
-  hyphens: auto;
+  hyphens: none;
 }
 .passage p:last-child { margin-bottom: 0; }
 
