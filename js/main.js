@@ -261,6 +261,8 @@
     let voice = null;
     let idx = 0;
     let state = "idle"; // idle | reading | paused
+    let currentUtterance = null; // kept referenced on purpose, see speakFrom()
+    let watchdog = null;
 
     function pickVoice() {
       const voices = speechSynthesis.getVoices();
@@ -270,6 +272,9 @@
     if ("onvoiceschanged" in speechSynthesis) {
       speechSynthesis.onvoiceschanged = pickVoice;
     }
+    // Firefox doesn't always fire onvoiceschanged even though it loads the
+    // voice list asynchronously, so poll a couple of times early on too.
+    [300, 1000, 2500].forEach((ms) => setTimeout(pickVoice, ms));
 
     function extractText(el) {
       const clone = el.cloneNode(true);
@@ -320,17 +325,39 @@
       item.el.classList.add("tts-active");
       revealCurrent(item.el);
 
+      pickVoice(); // re-check right before speaking, in case it just loaded
       const utter = new SpeechSynthesisUtterance(item.text);
       utter.lang = "ru-RU";
       if (voice) utter.voice = voice;
       utter.rate = 0.98;
+      // Firefox is known to garbage-collect SpeechSynthesisUtterance objects
+      // that nothing in JS still references, cutting speech off mid-queue.
+      // Keeping this assignment alive for the duration is the standard fix.
+      currentUtterance = utter;
+
+      let started = false;
+      utter.onstart = () => {
+        started = true;
+        clearTimeout(watchdog);
+      };
       utter.onend = () => {
+        clearTimeout(watchdog);
         if (state === "reading") speakFrom(idx + 1);
       };
       utter.onerror = () => {
+        clearTimeout(watchdog);
         if (state === "reading") speakFrom(idx + 1);
       };
       speechSynthesis.speak(utter);
+
+      // Some browsers (seen on Firefox) silently drop an utterance without
+      // ever firing start/end/error — missing voice, a stale voice
+      // reference, or the GC issue above. Rather than hang forever on one
+      // click, skip ahead if nothing happened after a few seconds.
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => {
+        if (!started && state === "reading" && idx === i) speakFrom(i + 1);
+      }, 4000);
     }
 
     function start() {
@@ -360,7 +387,9 @@
     function stop() {
       state = "idle";
       setBtnState(false);
+      clearTimeout(watchdog);
       speechSynthesis.cancel();
+      currentUtterance = null;
       clearHighlight();
       idx = 0;
     }
