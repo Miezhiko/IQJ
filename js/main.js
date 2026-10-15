@@ -321,9 +321,6 @@
       }
       idx = i;
       const item = items[idx];
-      clearHighlight();
-      item.el.classList.add("tts-active");
-      revealCurrent(item.el);
 
       pickVoice(); // re-check right before speaking, in case it just loaded
       const utter = new SpeechSynthesisUtterance(item.text);
@@ -337,8 +334,15 @@
 
       let started = false;
       utter.onstart = () => {
+        // Highlighting/scrolling here, not before speak() is called, keeps
+        // the page in sync with what's actually audible: speak() can have
+        // a noticeable startup lag, and doing this eagerly made the page
+        // visibly jump ahead of the voice still finishing the prior block.
         started = true;
         clearTimeout(watchdog);
+        clearHighlight();
+        item.el.classList.add("tts-active");
+        revealCurrent(item.el);
       };
       utter.onend = () => {
         clearTimeout(watchdog);
