@@ -37,7 +37,7 @@ BOOK_HEADING_RE = {
 }
 
 KIND_WORDS = {
-    "ru": {"conclusion": "Заключение", "glossary": "Словарь", "axioms": "Аксиоматика", "practices": "Практики"},
+    "ru": {"conclusion": "Заключение", "glossary": "Словарь", "axioms": "Аксиоматика", "practices": "Садхана"},
     "en": {"conclusion": "Conclusion", "glossary": "Glossary", "axioms": "Axiomatics", "practices": "Practices"},
     "th": {"conclusion": "บทส่งท้าย", "glossary": "อภิธานศัพท์", "axioms": "สูตรสัจธรรม", "practices": "การฝึกฝน"},
 }
