@@ -18,6 +18,22 @@
   const initialHash = location.hash ? location.hash.slice(1) : null;
   window.scrollTo(0, 0);
 
+  /* ---------------- language switch ---------------- */
+  /* The head bootstrap script (template.html) handles geolocation and
+     redirecting; this just highlights the current language and remembers
+     an explicit click so it sticks on the next visit. */
+  (function setupLangSwitch() {
+    const nav = document.getElementById("lang-switch");
+    if (!nav) return;
+    const current = document.documentElement.lang || "ru";
+    nav.querySelectorAll("a").forEach((a) => {
+      a.classList.toggle("active", a.dataset.lang === current);
+      a.addEventListener("click", () => {
+        try { localStorage.setItem("iqj-lang", a.dataset.lang); } catch (e) {}
+      });
+    });
+  })();
+
   gsap.registerPlugin(ScrollTrigger);
 
   /* ---------------- Lenis smooth scroll ---------------- */
@@ -297,6 +313,9 @@
       ".gloss-entry",
     ].join(", ");
 
+    const PAGE_LANG = document.documentElement.lang || "ru";
+    const BCP47 = { ru: "ru-RU", en: "en-US", th: "th-TH" }[PAGE_LANG] || "ru-RU";
+
     let items = null; // [{el, text}], built lazily on first play
     let voice = null;
     let idx = 0;
@@ -306,7 +325,7 @@
 
     function pickVoice() {
       const voices = speechSynthesis.getVoices();
-      voice = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("ru")) || null;
+      voice = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(PAGE_LANG)) || null;
     }
     pickVoice();
     if ("onvoiceschanged" in speechSynthesis) {
@@ -364,7 +383,7 @@
 
       pickVoice(); // re-check right before speaking, in case it just loaded
       const utter = new SpeechSynthesisUtterance(item.text);
-      utter.lang = "ru-RU";
+      utter.lang = BCP47;
       if (voice) utter.voice = voice;
       utter.rate = 0.98;
       // Firefox is known to garbage-collect SpeechSynthesisUtterance objects

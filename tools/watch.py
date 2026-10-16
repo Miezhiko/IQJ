@@ -21,6 +21,8 @@ ROOT = Path(__file__).parent.parent
 REBUILD = ROOT / "rebuild.sh"
 WATCHED = [
     ROOT / "README.md",
+    ROOT / "README.en.md",
+    ROOT / "README.th.md",
     ROOT / "template.html",
     ROOT / "pdf" / "template.html",
     ROOT / "tools" / "manifesto.py",

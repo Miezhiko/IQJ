@@ -127,6 +127,42 @@ body {
   #side-nav { display: none; }
 }
 
+/* ---------- language switch ---------- */
+
+#lang-switch {
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  z-index: 40;
+  display: flex;
+  gap: 6px;
+}
+
+#lang-switch a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 13px;
+  border: 1px solid rgba(201, 168, 106, 0.55);
+  background: rgba(14, 9, 6, 0.35);
+  backdrop-filter: blur(3px);
+  color: rgba(232, 200, 138, 0.75);
+  font-family: var(--serif-display);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+#lang-switch a:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+#lang-switch a.active {
+  border-color: var(--gold-bright);
+  background: var(--gold-bright);
+  color: var(--ink-void);
+}
+
 /* ---------- sound toggle ---------- */
 
 #sound-toggle {
@@ -559,4 +595,13 @@ body {
 @media (max-width: 560px) {
   .passage { padding: 1.6rem 1.2rem; }
   .book-divider { min-height: 58vh; }
+}
+
+/* ---------- Thai typeface ----------
+   Cormorant Garamond / EB Garamond carry no Thai glyphs, so the Thai build
+   falls back to whatever sans-serif the OS ships with unless overridden. */
+
+:root[lang="th"] {
+  --serif-display: 'Noto Serif Thai', 'Cormorant Garamond', serif;
+  --serif-body: 'Noto Serif Thai', 'EB Garamond', serif;
 }

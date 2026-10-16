@@ -20,10 +20,26 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 README = ROOT / "README.md"
 
+# Russian book headings spell the ordinal out ("Книга Девятая"), so they need
+# a word -> roman numeral lookup. English/Thai headings embed the roman
+# numeral directly ("Book IX." / "เล่ม IX.") and so need no lookup table —
+# see BOOK_HEADING_RE below.
 BOOK_NUM_WORDS = {
     "Первая": "I", "Вторая": "II", "Третья": "III", "Четвёртая": "IV",
     "Пятая": "V", "Шестая": "VI", "Седьмая": "VII", "Восьмая": "VIII",
     "Девятая": "IX", "Десятая": "X",
+}
+
+BOOK_HEADING_RE = {
+    "ru": re.compile(r"Книга (\S+)\.\s*(.+)"),
+    "en": re.compile(r"Book\s+([IVXLCDM]+)\.\s*(.+)"),
+    "th": re.compile(r"เล่ม\s+([IVXLCDM]+)\.\s*(.+)"),
+}
+
+KIND_WORDS = {
+    "ru": {"conclusion": "Заключение", "glossary": "Словарь", "axioms": "Аксиоматика"},
+    "en": {"conclusion": "Conclusion", "glossary": "Glossary", "axioms": "Axiomatics"},
+    "th": {"conclusion": "บทส่งท้าย", "glossary": "อภิธานศัพท์", "axioms": "สูตรสัจธรรม"},
 }
 
 
@@ -36,7 +52,7 @@ def inline(text: str) -> str:
     return text
 
 
-def parse(md: str) -> dict:
+def parse(md: str, lang: str = "ru") -> dict:
     """
     Parses the manifesto into:
       {"title": str, "preamble": [html, ...], "books": [book, ...]}
@@ -61,6 +77,7 @@ def parse(md: str) -> dict:
       --- / blank line              -> block separator
       anything else                 -> accumulated into a paragraph ("p")
     """
+    kind_words = KIND_WORDS.get(lang, KIND_WORDS["ru"])
     lines = md.split("\n")
     doc = {"title": "", "preamble": [], "books": []}
     i = 0
@@ -111,11 +128,11 @@ def parse(md: str) -> dict:
             title = stripped[3:].strip()
             glyph, _, rest = title.partition(" ")
             current_book = {"glyph": glyph, "title": rest, "sections": [], "kind": "book"}
-            if rest.startswith("Заключение"):
+            if rest.startswith(kind_words["conclusion"]):
                 current_book["kind"] = "conclusion"
-            elif rest.startswith("Словарь"):
+            elif rest.startswith(kind_words["glossary"]):
                 current_book["kind"] = "glossary"
-            elif "Аксиоматика" in rest:
+            elif kind_words["axioms"] in rest:
                 current_book["kind"] = "axioms"
             doc["books"].append(current_book)
             current_section = {"num": None, "title": None, "blocks": []}
@@ -158,7 +175,7 @@ def parse(md: str) -> dict:
             flush_para()
             flush_list()
             item = stripped[2:]
-            m = re.match(r"\*\*(.+?)\*\*\s*—\s*(.+)", item)
+            m = re.match(r"\*\*(.+?)\*\*\s*-\s*(.+)", item)
             if m:
                 current_section["blocks"].append(("dt", (inline(m.group(1)), inline(m.group(2)))))
             else:
@@ -190,20 +207,26 @@ def parse(md: str) -> dict:
     return doc
 
 
-def load() -> dict:
-    """Convenience: parse ../README.md directly."""
-    return parse(README.read_text(encoding="utf-8"))
+def load(path: Path = README, lang: str = "ru") -> dict:
+    """Convenience: parse a manifesto source file directly."""
+    return parse(path.read_text(encoding="utf-8"), lang=lang)
 
 
-def book_roman(book: dict, fallback: int) -> str:
-    """'Книга Первая. ...' -> 'I' (falls back to the 1-based book index)."""
-    m = re.match(r"Книга (\S+)\.\s*(.+)", book["title"])
+def book_roman(book: dict, fallback: int, lang: str = "ru") -> str:
+    """'Книга Первая. ...' -> 'I' / 'Book IX. ...' -> 'IX' (falls back to the
+    1-based book index if the heading doesn't match the expected shape)."""
+    heading_re = BOOK_HEADING_RE.get(lang, BOOK_HEADING_RE["ru"])
+    m = heading_re.match(book["title"])
     if not m:
         return str(fallback)
-    return BOOK_NUM_WORDS.get(m.group(1), str(fallback))
+    token = m.group(1)
+    if lang == "ru":
+        return BOOK_NUM_WORDS.get(token, str(fallback))
+    return token  # en/th headings already spell the roman numeral out
 
 
-def book_name(book: dict) -> str:
+def book_name(book: dict, lang: str = "ru") -> str:
     """'Книга Первая. Исток и Русло' -> 'Исток и Русло'."""
-    m = re.match(r"Книга (\S+)\.\s*(.+)", book["title"])
+    heading_re = BOOK_HEADING_RE.get(lang, BOOK_HEADING_RE["ru"])
+    m = heading_re.match(book["title"])
     return m.group(2) if m else book["title"]

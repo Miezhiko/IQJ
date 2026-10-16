@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Builds index.html from README.md via the shared parser in tools/manifesto.py.
+Builds index.html / index.en.html / index.th.html from README.md /
+README.en.md / README.th.md via the shared parser in tools/manifesto.py.
 
-Re-run after any edit to README.md:
+Re-run after any edit to any of the three source files:
 
     python3 build.py
 
@@ -17,7 +18,68 @@ sys.path.insert(0, str(ROOT / "tools"))
 import manifesto  # noqa: E402
 
 TEMPLATE = ROOT / "template.html"
-OUT = ROOT / "index.html"
+
+# Everything that differs between languages lives here: the source file,
+# the output file, and every bit of UI copy that template.html doesn't get
+# from parsing the manifesto itself (meta description, button labels, the
+# hero banner, the footer line...).
+LANGS = {
+    "ru": {
+        "readme": ROOT / "README.md",
+        "out": ROOT / "index.html",
+        "lang_attr": "ru",
+        "desc": "Имперский Квадроберский Джайнизм — трактат о Свабхаве, Хридае и Пути Служения.",
+        "hero_title": "Имперский<br>Квадроберский<br>Джайнизм",
+        "hero_subtitle": "Трактат о Свабхаве, Хридае и Пути Служения",
+        "scroll_cue": "прокрутите, чтобы войти в русло",
+        "footer": "Имперский Квадроберский Джайнизм",
+        "nav_aria": "Книги трактата",
+        "sound_aria": "Переключить фоновый звук", "sound_title": "Звук",
+        "tts_aria": "Слушать трактат вслух", "tts_title": "Слушать",
+        "pdf_aria": "Скачать PDF", "pdf_title": "Скачать PDF",
+        "dec_aria": "Уменьшить размер текста", "dec_title": "Меньше текста",
+        "inc_aria": "Увеличить размер текста", "inc_title": "Больше текста",
+        "font_links": "",
+    },
+    "en": {
+        "readme": ROOT / "README.en.md",
+        "out": ROOT / "index.en.html",
+        "lang_attr": "en",
+        "desc": "Imperial Quadrobic Jainism — a treatise on Svabhava, Hridaya, and the Path of Service.",
+        "hero_title": "Imperial<br>Quadrobic<br>Jainism",
+        "hero_subtitle": "A treatise on Svabhava, Hridaya, and the Path of Service",
+        "scroll_cue": "scroll to enter the riverbed",
+        "footer": "Imperial Quadrobic Jainism",
+        "nav_aria": "Books of the treatise",
+        "sound_aria": "Toggle ambient sound", "sound_title": "Sound",
+        "tts_aria": "Listen to the treatise", "tts_title": "Listen",
+        "pdf_aria": "Download PDF", "pdf_title": "Download PDF",
+        "dec_aria": "Decrease text size", "dec_title": "Smaller text",
+        "inc_aria": "Increase text size", "inc_title": "Larger text",
+        "font_links": "",
+    },
+    "th": {
+        "readme": ROOT / "README.th.md",
+        "out": ROOT / "index.th.html",
+        "lang_attr": "th",
+        "desc": "ไจนนิยมสี่เท้าแห่งจักรวรรดิ — คัมภีร์ว่าด้วยสวภาวะ หฤทัย และวิถีแห่งการรับใช้",
+        "hero_title": "ไจนนิยม<br>สี่เท้า<br>แห่งจักรวรรดิ",
+        "hero_subtitle": "คัมภีร์ว่าด้วยสวภาวะ หฤทัย และวิถีแห่งการรับใช้",
+        "scroll_cue": "เลื่อนลงเพื่อเข้าสู่สายน้ำ",
+        "footer": "ไจนนิยมสี่เท้าแห่งจักรวรรดิ",
+        "nav_aria": "บรรดาเล่มของคัมภีร์",
+        "sound_aria": "เปิด/ปิดเสียงพื้นหลัง", "sound_title": "เสียง",
+        "tts_aria": "ฟังคัมภีร์", "tts_title": "ฟัง",
+        "pdf_aria": "ดาวน์โหลด PDF", "pdf_title": "ดาวน์โหลด PDF",
+        "dec_aria": "ลดขนาดตัวอักษร", "dec_title": "ตัวอักษรเล็กลง",
+        "inc_aria": "เพิ่มขนาดตัวอักษร", "inc_title": "ตัวอักษรใหญ่ขึ้น",
+        "font_links": (
+            '\n<link href="https://fonts.googleapis.com/css2?'
+            'family=Noto+Serif+Thai:ital,wght@0,400;0,500;0,600;0,700;1,500'
+            '&display=swap" rel="stylesheet">'
+        ),
+    },
+}
 
 
 def render_blocks(blocks):
@@ -53,10 +115,10 @@ BOOK_MOODS = {
 }
 
 
-def render_book(book, book_index):
+def render_book(book, book_index, lang):
     if book["kind"] == "book":
-        roman = manifesto.book_roman(book, book_index)
-        book_title = manifesto.book_name(book)
+        roman = manifesto.book_roman(book, book_index, lang)
+        book_title = manifesto.book_name(book, lang)
         mood = BOOK_MOODS.get(book_index, "flow")
         sections_html = []
         for sec in book["sections"]:
@@ -83,8 +145,8 @@ def render_book(book, book_index):
 </section>
 """
     elif book["kind"] == "axioms":
-        roman = manifesto.book_roman(book, book_index)
-        book_title = manifesto.book_name(book)
+        roman = manifesto.book_roman(book, book_index, lang)
+        book_title = manifesto.book_name(book, lang)
         axioms = []
         for sec in book["sections"]:
             for kind, payload in sec["blocks"]:
@@ -104,6 +166,7 @@ def render_book(book, book_index):
 </section>
 """
     elif book["kind"] == "conclusion":
+        book_title = manifesto.book_name(book, lang)
         blocks = []
         for sec in book["sections"]:
             blocks.append(render_blocks(sec["blocks"]))
@@ -111,12 +174,13 @@ def render_book(book, book_index):
 <section class="conclusion" id="conclusion" data-mood="calm">
   <div class="book-divider">
     <span class="glyph-line" aria-hidden="true">△</span>
-    <h2 class="book-title reveal-title">Заключение</h2>
+    <h2 class="book-title reveal-title">{book_title}</h2>
   </div>
   <div class="book-body">{''.join(blocks)}</div>
 </section>
 """
     elif book["kind"] == "glossary":
+        book_title = manifesto.book_name(book, lang)
         blocks = []
         for sec in book["sections"]:
             blocks.append(render_blocks(sec["blocks"]))
@@ -124,7 +188,7 @@ def render_book(book, book_index):
 <section class="glossary" id="glossary" data-mood="still">
   <div class="book-divider">
     <span class="glyph-line" aria-hidden="true">△</span>
-    <h2 class="book-title reveal-title">Словарь терминов</h2>
+    <h2 class="book-title reveal-title">{book_title}</h2>
   </div>
   <dl class="gloss-grid">{''.join(blocks)}</dl>
 </section>
@@ -132,24 +196,30 @@ def render_book(book, book_index):
     return ""
 
 
-def render_nav(doc):
+def render_nav(doc, lang):
     items = []
     bi = 0
+    conclusion_title = "Заключение"
     for book in doc["books"]:
+        if book["kind"] == "conclusion":
+            conclusion_title = manifesto.book_name(book, lang)
         if book["kind"] != "book":
             continue
         bi += 1
-        roman = manifesto.book_roman(book, bi)
-        name = manifesto.book_name(book)
+        roman = manifesto.book_roman(book, bi, lang)
+        name = manifesto.book_name(book, lang)
         items.append(
             f'<a href="#book-{bi}" class="nav-dot" data-target="book-{bi}" title="{html.escape(name)}"><span>{roman}</span></a>'
         )
-    items.append('<a href="#conclusion" class="nav-dot" data-target="conclusion" title="Заключение"><span>◆</span></a>')
+    items.append(
+        f'<a href="#conclusion" class="nav-dot" data-target="conclusion" title="{html.escape(conclusion_title)}"><span>◆</span></a>'
+    )
     return "\n".join(items)
 
 
-def main():
-    doc = manifesto.load()
+def build(lang: str, tpl: str):
+    meta = LANGS[lang]
+    doc = manifesto.load(meta["readme"], lang=lang)
 
     preamble_html = "\n".join(f'<p class="reveal">{p}</p>' for p in doc["preamble"])
 
@@ -158,18 +228,41 @@ def main():
     for book in doc["books"]:
         if book["kind"] == "book":
             bi += 1
-        books_html.append(render_book(book, bi))
+        books_html.append(render_book(book, bi, lang))
 
-    nav_html = render_nav(doc)
+    nav_html = render_nav(doc, lang)
 
-    tpl = TEMPLATE.read_text(encoding="utf-8")
     out = tpl.replace("<!--TITLE-->", html.escape(doc["title"]))
     out = out.replace("<!--PREAMBLE-->", preamble_html)
     out = out.replace("<!--BOOKS-->", "\n".join(books_html))
     out = out.replace("<!--NAV-->", nav_html)
+    out = out.replace("<!--LANG_ATTR-->", meta["lang_attr"])
+    out = out.replace("<!--DESC-->", html.escape(meta["desc"]))
+    out = out.replace("<!--HERO_TITLE-->", meta["hero_title"])
+    out = out.replace("<!--HERO_SUBTITLE-->", html.escape(meta["hero_subtitle"]))
+    out = out.replace("<!--SCROLL_CUE-->", html.escape(meta["scroll_cue"]))
+    out = out.replace("<!--FOOTER-->", html.escape(meta["footer"]))
+    out = out.replace("<!--NAV_ARIA-->", html.escape(meta["nav_aria"]))
+    out = out.replace("<!--SOUND_ARIA-->", html.escape(meta["sound_aria"]))
+    out = out.replace("<!--SOUND_TITLE-->", html.escape(meta["sound_title"]))
+    out = out.replace("<!--TTS_ARIA-->", html.escape(meta["tts_aria"]))
+    out = out.replace("<!--TTS_TITLE-->", html.escape(meta["tts_title"]))
+    out = out.replace("<!--PDF_ARIA-->", html.escape(meta["pdf_aria"]))
+    out = out.replace("<!--PDF_TITLE-->", html.escape(meta["pdf_title"]))
+    out = out.replace("<!--DEC_ARIA-->", html.escape(meta["dec_aria"]))
+    out = out.replace("<!--DEC_TITLE-->", html.escape(meta["dec_title"]))
+    out = out.replace("<!--INC_ARIA-->", html.escape(meta["inc_aria"]))
+    out = out.replace("<!--INC_TITLE-->", html.escape(meta["inc_title"]))
+    out = out.replace("<!--FONT_LINKS-->", meta["font_links"])
 
-    OUT.write_text(out, encoding="utf-8")
-    print(f"wrote {OUT} ({len(out)} bytes), {bi} books")
+    meta["out"].write_text(out, encoding="utf-8")
+    print(f"wrote {meta['out']} ({len(out)} bytes), {bi} books")
+
+
+def main():
+    tpl = TEMPLATE.read_text(encoding="utf-8")
+    for lang in LANGS:
+        build(lang, tpl)
 
 
 if __name__ == "__main__":
