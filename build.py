@@ -115,23 +115,32 @@ BOOK_MOODS = {
 }
 
 
+def render_sections(sections):
+    """Shared by "book" and "practices": a list of .passage articles, each
+    with an optional heading (numbered "§N. Title" or, for a titled-but-
+    unnumbered subsection, just "Title") and its blocks."""
+    sections_html = []
+    for sec in sections:
+        if sec["num"] is None and sec["title"] is None and not sec["blocks"]:
+            continue
+        if sec["num"]:
+            header = f'<h3 class="reveal"><span class="sec-num">§{sec["num"]}</span> {sec["title"]}</h3>'
+        elif sec["title"]:
+            header = f'<h3 class="reveal">{sec["title"]}</h3>'
+        else:
+            header = ""
+        id_attr = f' id="p{sec["num"]}"' if sec["num"] else ""
+        sections_html.append(
+            f'<article class="passage"{id_attr}>{header}{render_blocks(sec["blocks"])}</article>'
+        )
+    return "".join(sections_html)
+
+
 def render_book(book, book_index, lang):
     if book["kind"] == "book":
         roman = manifesto.book_roman(book, book_index, lang)
         book_title = manifesto.book_name(book, lang)
         mood = BOOK_MOODS.get(book_index, "flow")
-        sections_html = []
-        for sec in book["sections"]:
-            if sec["num"] is None and not sec["blocks"]:
-                continue
-            header = (
-                f'<h3 class="reveal"><span class="sec-num">§{sec["num"]}</span> {sec["title"]}</h3>'
-                if sec["num"]
-                else ""
-            )
-            sections_html.append(
-                f'<article class="passage" id="p{sec["num"] or ""}">{header}{render_blocks(sec["blocks"])}</article>'
-            )
         return f"""
 <section class="book" id="book-{book_index}" data-book="{book_index}" data-mood="{mood}">
   <div class="book-divider">
@@ -140,7 +149,20 @@ def render_book(book, book_index, lang):
     <span class="glyph-line" aria-hidden="true">△</span>
   </div>
   <div class="book-body">
-    {''.join(sections_html)}
+    {render_sections(book["sections"])}
+  </div>
+</section>
+"""
+    elif book["kind"] == "practices":
+        book_title = manifesto.book_name(book, lang)
+        return f"""
+<section class="book practices-book" id="practices" data-mood="still">
+  <div class="book-divider">
+    <span class="glyph-line" aria-hidden="true">△</span>
+    <h2 class="book-title reveal-title">{book_title}</h2>
+  </div>
+  <div class="book-body">
+    {render_sections(book["sections"])}
   </div>
 </section>
 """

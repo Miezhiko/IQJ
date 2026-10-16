@@ -3,16 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <script>
-/* Language bootstrap: an explicit earlier choice always wins and redirects
-   straight there; a first-ever visit with no stored choice is geolocated
-   by IP (only from this, the Russian root page, so a direct link to an
-   -en/-th page is never hijacked), and the result is remembered. If the
-   lookup fails for any reason, the page simply stays on the original
+/* Language bootstrap: Russian is the default in every case where geolocation
+   doesn't clearly call for something else. An explicit earlier choice always
+   wins and redirects straight there; a first-ever visit with no stored
+   choice is geolocated by IP (only from this, the Russian root page, so a
+   direct link to an -en/-th page is never hijacked). Thai is picked only
+   for Thailand itself; English is picked only for a short, deliberately
+   narrow list of countries where it is clearly the primary language -
+   everything else (including every other non-Russian-speaking country)
+   stays on the Russian original rather than defaulting to English. If the
+   lookup fails for any reason, the page also simply stays on the original
    Russian source text, as intended. */
 (function () {
   "use strict";
   var KEY = "iqj-lang";
   var FILES = { ru: "index.html", en: "index.en.html", th: "index.th.html" };
+  // Deliberately narrow: countries where English is unambiguously the
+  // primary/official language. Extend this list, don't widen the fallback.
+  var ENGLISH_COUNTRIES = ["US", "GB", "CA", "AU", "NZ", "IE"];
   var current = document.documentElement.lang || "ru";
   var stored = null;
   try { stored = localStorage.getItem(KEY); } catch (e) {}
@@ -32,7 +40,9 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       var cc = (data && data.country_code) || "";
-      var lang = cc === "RU" ? "ru" : (cc === "TH" ? "th" : "en");
+      var lang = "ru";
+      if (cc === "TH") lang = "th";
+      else if (ENGLISH_COUNTRIES.indexOf(cc) !== -1) lang = "en";
       try { localStorage.setItem(KEY, lang); } catch (e) {}
       goTo(lang);
     })

@@ -37,9 +37,9 @@ BOOK_HEADING_RE = {
 }
 
 KIND_WORDS = {
-    "ru": {"conclusion": "Заключение", "glossary": "Словарь", "axioms": "Аксиоматика"},
-    "en": {"conclusion": "Conclusion", "glossary": "Glossary", "axioms": "Axiomatics"},
-    "th": {"conclusion": "บทส่งท้าย", "glossary": "อภิธานศัพท์", "axioms": "สูตรสัจธรรม"},
+    "ru": {"conclusion": "Заключение", "glossary": "Словарь", "axioms": "Аксиоматика", "practices": "Практики"},
+    "en": {"conclusion": "Conclusion", "glossary": "Glossary", "axioms": "Axiomatics", "practices": "Practices"},
+    "th": {"conclusion": "บทส่งท้าย", "glossary": "อภิธานศัพท์", "axioms": "สูตรสัจธรรม", "practices": "การฝึกฝน"},
 }
 
 
@@ -132,6 +132,8 @@ def parse(md: str, lang: str = "ru") -> dict:
                 current_book["kind"] = "conclusion"
             elif rest.startswith(kind_words["glossary"]):
                 current_book["kind"] = "glossary"
+            elif rest.startswith(kind_words["practices"]):
+                current_book["kind"] = "practices"
             elif kind_words["axioms"] in rest:
                 current_book["kind"] = "axioms"
             doc["books"].append(current_book)
