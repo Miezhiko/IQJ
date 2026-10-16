@@ -302,8 +302,11 @@
 
   (function setupTTS() {
     const btn = document.getElementById("tts-toggle");
+    const wrap = document.getElementById("tts-wrap");
+    const voiceBtn = document.getElementById("tts-voice-btn");
+    const voicePanel = document.getElementById("tts-voice-panel");
     if (!btn || !("speechSynthesis" in window)) {
-      if (btn) btn.style.display = "none";
+      if (wrap) wrap.style.display = "none";
       return;
     }
 
@@ -326,15 +329,106 @@
 
     let items = null; // [{el, text}], built lazily on first play
     let voice = null;
+    let voiceOptions = []; // every installed voice matching PAGE_LANG
+    let voiceOptionsSig = ""; // cheap signature, avoids rebuilding the panel on every poll
     let idx = 0;
     let state = "idle"; // idle | reading | paused
     let currentUtterance = null; // kept referenced on purpose, see speakFrom()
     let watchdog = null;
 
+    const VOICE_KEY = "iqj-tts-voice-" + PAGE_LANG;
+
     function pickVoice() {
       const voices = speechSynthesis.getVoices();
-      voice = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(PAGE_LANG)) || null;
+      voiceOptions = voices.filter((v) => v.lang && v.lang.toLowerCase().startsWith(PAGE_LANG));
+
+      const sig = voiceOptions.map((v) => v.voiceURI).join("|");
+      if (sig === voiceOptionsSig) {
+        // Same voice list as last time - still make sure `voice` itself
+        // points at one of today's actual Voice objects (some browsers
+        // hand out fresh objects on every getVoices() call).
+        if (voice) voice = voiceOptions.find((v) => v.voiceURI === voice.voiceURI) || voice;
+      } else {
+        voiceOptionsSig = sig;
+        let saved = null;
+        try { saved = localStorage.getItem(VOICE_KEY); } catch (e) {}
+        voice = (saved && voiceOptions.find((v) => v.voiceURI === saved)) || voiceOptions[0] || null;
+        renderVoicePanel();
+      }
     }
+
+    function renderVoicePanel() {
+      if (!voiceBtn || !voicePanel) return;
+      if (voiceOptions.length < 2) {
+        voiceBtn.hidden = true;
+        closeVoicePanel();
+        return;
+      }
+      voiceBtn.hidden = false;
+      voicePanel.innerHTML = "";
+      voiceOptions.forEach((v) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "tts-voice-option";
+        row.setAttribute("role", "menuitemradio");
+        row.textContent = v.name.replace(/\s*\([^)]*\)\s*$/, ""); // trim "(ru-RU)" suffixes some browsers add
+        row.title = v.name;
+        const isActive = !!voice && v.voiceURI === voice.voiceURI;
+        row.setAttribute("aria-checked", isActive ? "true" : "false");
+        row.classList.toggle("active", isActive);
+        row.addEventListener("click", () => {
+          voice = v;
+          try { localStorage.setItem(VOICE_KEY, v.voiceURI); } catch (e) {}
+          renderVoicePanel();
+          closeVoicePanel();
+          // Changing voice mid-sentence isn't possible with this API; the
+          // next-best thing is restarting the current block so the choice
+          // is actually audible right away instead of waiting.
+          if (state === "reading") speakFrom(idx);
+        });
+        voicePanel.appendChild(row);
+      });
+    }
+
+    function openVoicePanel() {
+      if (!voiceBtn || !voicePanel || voiceBtn.hidden) return;
+      voicePanel.hidden = false;
+      requestAnimationFrame(() => {
+        voicePanel.classList.add("open");
+        voiceBtn.classList.add("open");
+      });
+      voiceBtn.setAttribute("aria-expanded", "true");
+      document.addEventListener("click", onDocClickCloseVoicePanel, true);
+      document.addEventListener("keydown", onEscCloseVoicePanel);
+    }
+
+    function closeVoicePanel() {
+      if (!voiceBtn || !voicePanel) return;
+      voicePanel.classList.remove("open");
+      voiceBtn.classList.remove("open");
+      voiceBtn.setAttribute("aria-expanded", "false");
+      document.removeEventListener("click", onDocClickCloseVoicePanel, true);
+      document.removeEventListener("keydown", onEscCloseVoicePanel);
+      setTimeout(() => {
+        if (!voicePanel.classList.contains("open")) voicePanel.hidden = true;
+      }, 250);
+    }
+
+    function onDocClickCloseVoicePanel(e) {
+      if (wrap && !wrap.contains(e.target)) closeVoicePanel();
+    }
+    function onEscCloseVoicePanel(e) {
+      if (e.key === "Escape") closeVoicePanel();
+    }
+
+    if (voiceBtn) {
+      voiceBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (voicePanel.classList.contains("open")) closeVoicePanel();
+        else openVoicePanel();
+      });
+    }
+
     pickVoice();
     if ("onvoiceschanged" in speechSynthesis) {
       speechSynthesis.onvoiceschanged = pickVoice;

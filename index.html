@@ -92,10 +92,16 @@
   <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 10v4h4l5 5V5L7 10H3z" fill="currentColor"/></svg>
 </button>
 
-<button id="tts-toggle" aria-label="Слушать трактат вслух" title="Слушать">
-  <svg class="tts-icon-play" viewBox="0 0 24 24" width="16" height="16"><path d="M6 4l14 8-14 8V4z" fill="currentColor"/></svg>
-  <svg class="tts-icon-pause" viewBox="0 0 24 24" width="16" height="16"><path d="M5 4h4v16H5V4zm10 0h4v16h-4V4z" fill="currentColor"/></svg>
-</button>
+<div id="tts-wrap">
+  <button id="tts-toggle" aria-label="Слушать трактат вслух" title="Слушать">
+    <svg class="tts-icon-play" viewBox="0 0 24 24" width="16" height="16"><path d="M6 4l14 8-14 8V4z" fill="currentColor"/></svg>
+    <svg class="tts-icon-pause" viewBox="0 0 24 24" width="16" height="16"><path d="M5 4h4v16H5V4zm10 0h4v16h-4V4z" fill="currentColor"/></svg>
+  </button>
+  <button id="tts-voice-btn" aria-label="Выбрать голос чтеца" title="Голос" aria-haspopup="true" aria-expanded="false" hidden>
+    <svg viewBox="0 0 24 24" width="9" height="9"><path d="M4 3l9 9-9 9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div id="tts-voice-panel" role="menu" aria-label="Голос" hidden></div>
+</div>
 
 <a id="pdf-download" href="IQJ-manifest.pdf" download aria-label="Скачать PDF" title="Скачать PDF">
   <svg viewBox="0 0 24 24" width="16" height="16">
