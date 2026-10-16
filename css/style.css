@@ -20,6 +20,8 @@
 
   --max-w: 700px;
   --nav-w: 56px;
+
+  --text-scale: 1;
 }
 
 * { box-sizing: border-box; }
@@ -206,6 +208,44 @@ body {
 #pdf-download:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
 #pdf-download svg { pointer-events: none; }
 
+/* ---------- text-size controls ---------- */
+
+#text-size-controls {
+  position: fixed;
+  left: 18px;
+  bottom: 162px;
+  z-index: 40;
+  display: flex;
+  gap: 8px;
+}
+
+#text-size-dec,
+#text-size-inc {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(201, 168, 106, 0.55);
+  background: rgba(14, 9, 6, 0.35);
+  color: rgba(232, 200, 138, 0.8);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif-display);
+  font-weight: 600;
+  line-height: 1;
+  transition: all 0.3s ease;
+}
+#text-size-dec:hover,
+#text-size-inc:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+#text-size-dec:disabled,
+#text-size-inc:disabled { opacity: 0.35; cursor: default; }
+#text-size-dec:disabled:hover,
+#text-size-inc:disabled:hover { border-color: rgba(201, 168, 106, 0.55); color: rgba(232, 200, 138, 0.8); }
+#text-size-dec { font-size: 12px; }
+#text-size-inc { font-size: 17px; }
+
 /* ---------- layout scaffolding ---------- */
 
 #scroll-container {
@@ -301,7 +341,7 @@ body {
 .preamble p {
   font-family: var(--serif-display);
   font-style: italic;
-  font-size: clamp(1.15rem, 2.1vw, 1.4rem);
+  font-size: calc(clamp(1.15rem, 2.1vw, 1.4rem) * var(--text-scale));
   line-height: 1.75;
   color: var(--parchment);
   text-align: center;
@@ -380,7 +420,7 @@ body {
 }
 
 .passage p {
-  font-size: clamp(1.02rem, 1.4vw, 1.12rem);
+  font-size: calc(clamp(1.02rem, 1.4vw, 1.12rem) * var(--text-scale));
   line-height: 1.8;
   margin: 0 0 1.15rem;
   text-align: justify;
@@ -403,7 +443,7 @@ body {
   padding-left: 1.4rem;
 }
 .passage-list li {
-  font-size: clamp(1.0rem, 1.35vw, 1.08rem);
+  font-size: calc(clamp(1.0rem, 1.35vw, 1.08rem) * var(--text-scale));
   line-height: 1.75;
   margin-bottom: 0.9rem;
   text-align: justify;
@@ -423,7 +463,7 @@ body {
 
 .axioms-list li.axiom {
   font-family: var(--serif-display);
-  font-size: clamp(1.25rem, 3vw, 1.9rem);
+  font-size: calc(clamp(1.25rem, 3vw, 1.9rem) * var(--text-scale));
   font-weight: 500;
   color: var(--parchment);
   text-align: center;
@@ -451,7 +491,7 @@ body {
   text-align: center;
 }
 .conclusion p {
-  font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+  font-size: calc(clamp(1.05rem, 1.6vw, 1.2rem) * var(--text-scale));
   line-height: 1.85;
   color: var(--parchment);
   text-align: left;
@@ -462,7 +502,7 @@ body {
   font-family: var(--serif-display);
   font-style: italic;
   text-align: center;
-  font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+  font-size: calc(clamp(1.2rem, 2.2vw, 1.5rem) * var(--text-scale));
   color: var(--gold-bright);
   margin-bottom: 1.1rem;
 }
@@ -497,7 +537,7 @@ body {
 }
 .gloss-entry dd {
   margin: 0;
-  font-size: 0.96rem;
+  font-size: calc(0.96rem * var(--text-scale));
   line-height: 1.6;
   color: var(--brown-dark);
 }

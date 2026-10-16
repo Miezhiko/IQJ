@@ -229,6 +229,45 @@
     });
   })();
 
+  /* ---------------- text size: reading comfort (A- / A+) ---------------- */
+
+  (function setupTextScale() {
+    const dec = document.getElementById("text-size-dec");
+    const inc = document.getElementById("text-size-inc");
+    if (!dec || !inc) return;
+
+    const KEY = "iqj-text-scale";
+    const MIN = 0.85;
+    const MAX = 1.4;
+    const STEP = 0.1;
+    const root = document.documentElement;
+
+    let scale = parseFloat(localStorage.getItem(KEY));
+    if (!scale || isNaN(scale)) scale = 1;
+    scale = Math.min(MAX, Math.max(MIN, scale));
+
+    function apply() {
+      root.style.setProperty("--text-scale", scale.toFixed(2));
+      dec.disabled = scale <= MIN + 1e-9;
+      inc.disabled = scale >= MAX - 1e-9;
+      try { localStorage.setItem(KEY, scale.toFixed(2)); } catch (e) {}
+      // layout heights shift with font size, so scroll-triggered reveals
+      // need to recompute against the new geometry
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+    }
+
+    dec.addEventListener("click", () => {
+      scale = Math.max(MIN, Math.round((scale - STEP) * 100) / 100);
+      apply();
+    });
+    inc.addEventListener("click", () => {
+      scale = Math.min(MAX, Math.round((scale + STEP) * 100) / 100);
+      apply();
+    });
+
+    apply();
+  })();
+
   /* ---------------- text-to-speech: "listen to the treatise" ---------------- */
   /* Walks the content in document order, queues one SpeechSynthesisUtterance
      per block (paragraph, axiom, glossary entry...), highlights whichever
