@@ -305,7 +305,11 @@
     const wrap = document.getElementById("tts-wrap");
     const voiceBtn = document.getElementById("tts-voice-btn");
     const voicePanel = document.getElementById("tts-voice-panel");
-    if (!btn || !("speechSynthesis" in window)) {
+    const PAGE_LANG = document.documentElement.lang || "ru";
+    // Thai speech synthesis support is bad enough across browsers/OSes
+    // (missing voices, mangled pronunciation) that offering the feature
+    // does more harm than leaving it off entirely on this page.
+    if (!btn || !("speechSynthesis" in window) || PAGE_LANG === "th") {
       if (wrap) wrap.style.display = "none";
       return;
     }
@@ -324,7 +328,6 @@
       ".gloss-entry",
     ].join(", ");
 
-    const PAGE_LANG = document.documentElement.lang || "ru";
     const BCP47 = { ru: "ru-RU", en: "en-US", th: "th-TH" }[PAGE_LANG] || "ru-RU";
 
     let items = null; // [{el, text}], built lazily on first play
