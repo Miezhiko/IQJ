@@ -167,7 +167,9 @@ def render_book(book, book_index, lang):
 </section>
 """
     elif book["kind"] == "axioms":
-        roman = manifesto.book_roman(book, book_index, lang)
+        # Not a numbered "Книга" (it's a crystallization of the preceding
+        # books, not a narrated one) - no roman-numeral badge, same as
+        # conclusion/glossary/practices.
         book_title = manifesto.book_name(book, lang)
         axioms = []
         for sec in book["sections"]:
@@ -178,11 +180,10 @@ def render_book(book, book_index, lang):
             f'<li class="axiom reveal"><span class="axiom-glyph">△</span>{a}</li>' for a in axioms
         )
         return f"""
-<section class="book axioms-book" id="axioms" data-book="{book_index}" data-mood="crystal">
+<section class="book axioms-book" id="axioms" data-mood="crystal">
   <div class="book-divider">
-    <span class="book-roman">{roman}</span>
-    <h2 class="book-title reveal-title">{book_title}</h2>
     <span class="glyph-line" aria-hidden="true">△</span>
+    <h2 class="book-title reveal-title">{book_title}</h2>
   </div>
   <ul class="axioms-list">{items}</ul>
 </section>
