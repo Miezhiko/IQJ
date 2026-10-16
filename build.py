@@ -219,13 +219,24 @@ def render_book(book, book_index, lang):
     return ""
 
 
+#  kind         id            glyph  (conclusion/practices/glossary aren't
+#                                      numbered "books", so each gets a
+#                                      fixed glyph instead of a roman numeral)
+TRAILING_NAV = {
+    "conclusion": ("conclusion", "◆"),
+    "practices": ("practices", "✦"),
+    "glossary": ("glossary", "§"),
+}
+
+
 def render_nav(doc, lang):
     items = []
     bi = 0
-    conclusion_title = "Заключение"
+    trailing = {}
     for book in doc["books"]:
-        if book["kind"] == "conclusion":
-            conclusion_title = manifesto.book_name(book, lang)
+        if book["kind"] in TRAILING_NAV:
+            trailing[book["kind"]] = manifesto.book_name(book, lang)
+            continue
         if book["kind"] != "book":
             continue
         bi += 1
@@ -234,9 +245,11 @@ def render_nav(doc, lang):
         items.append(
             f'<a href="#book-{bi}" class="nav-dot" data-target="book-{bi}" title="{html.escape(name)}"><span>{roman}</span></a>'
         )
-    items.append(
-        f'<a href="#conclusion" class="nav-dot" data-target="conclusion" title="{html.escape(conclusion_title)}"><span>◆</span></a>'
-    )
+    for kind, (target, glyph) in TRAILING_NAV.items():
+        title = trailing.get(kind, target)
+        items.append(
+            f'<a href="#{target}" class="nav-dot" data-target="{target}" title="{html.escape(title)}"><span>{glyph}</span></a>'
+        )
     return "\n".join(items)
 
 

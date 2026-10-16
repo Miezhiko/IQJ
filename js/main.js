@@ -89,13 +89,17 @@
   gsap.utils.toArray(".book-divider").forEach((div) => {
     const roman = div.querySelector(".book-roman");
     const title = div.querySelector(".reveal-title");
-    if (!roman || !title) return;
+    // Not every divider has a roman numeral (Заключение, Садхана,
+    // Аксиоматика, Словарь aren't numbered "books"), but the title must
+    // still be animated in - otherwise it stays at the CSS default
+    // opacity:0 for .reveal-title forever.
+    if (!title) return;
 
-    gsap.set(roman, { opacity: 0, y: 24 });
+    if (roman) gsap.set(roman, { opacity: 0, y: 24 });
     gsap.set(title, { opacity: 0, scale: 0.92, y: 16 });
 
     if (reduceMotion) {
-      gsap.set([roman, title], { opacity: 1, y: 0, scale: 1 });
+      gsap.set([roman, title].filter(Boolean), { opacity: 1, y: 0, scale: 1 });
       return;
     }
 
@@ -106,11 +110,15 @@
         toggleActions: "play none none reverse",
       },
     });
-    tl.to(roman, { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" }).to(
-      title,
-      { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: "power3.out" },
-      "-=0.55"
-    );
+    if (roman) {
+      tl.to(roman, { opacity: 1, y: 0, duration: 1.0, ease: "power2.out" }).to(
+        title,
+        { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: "power3.out" },
+        "-=0.55"
+      );
+    } else {
+      tl.to(title, { opacity: 1, scale: 1, y: 0, duration: 1.1, ease: "power3.out" });
+    }
   });
 
   /* ---------------- mood-driven background ---------------- */
