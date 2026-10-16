@@ -253,6 +253,7 @@
       ".passage p",
       ".passage-list li",
       "li.axiom",
+      ".book-body p",
       "p.invocation",
       ".gloss-entry",
     ].join(", ");
